@@ -1,6 +1,6 @@
 import esphome.config_validation as cv
 import esphome.codegen as cg
-from esphome.components import cover, button
+from esphome.components import button, cc1101, cover
 from esphome.const import CONF_ID
 from esphome import pins
 
@@ -40,6 +40,7 @@ CONFIG_SCHEMA = cover.COVER_SCHEMA.extend(
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
+    cg.add_library("EnjoyRemoteLib", "2.4.0")
     await cg.register_component(var, config)
     await cover.register_cover(var, config)
 
