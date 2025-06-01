@@ -1,4 +1,5 @@
 from esphome import pins
+from esphome.core import CORE
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.const import (
