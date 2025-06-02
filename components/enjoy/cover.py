@@ -35,6 +35,7 @@ CONFIG_SCHEMA = cover.cover_schema(EnjoyCover).extend(
 
 
 async def to_code(config):
+    cg.add_library("Preferences", None)
     cg.add_library("EnjoyRemoteLib", "2.4.0")
     var = await cover.new_cover(config)
     await cg.register_component(var, config)
