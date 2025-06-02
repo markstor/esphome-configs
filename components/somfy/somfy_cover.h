@@ -18,7 +18,7 @@ static const char *const TAG = "somfy.cover";
 class SomfyCover : public Cover, public Component {
 protected:
   double freq_;
-  cc1101::CC1101 cc1101_module_;
+  cc1101::CC1101 *cc1101_module_;
   SomfyRemote *remote_;
   NVSRollingCodeStorage *storage_;
   const char *storage_namespace_;
@@ -41,9 +41,9 @@ public:
     return traits;
   }
 
-  void sendCC1101Command(Command command) {
+  void sendCC1101Command(::Command command) {
 	ESP_LOGI(TAG, "Sending command %01x", command);
-	this->cc1101_module_->transmit([=] { this->remote_->sendCommand(command, this->repeat_); }, this->freq_);
+	this->cc1101_module_->transmit([this, command] { this->remote_->sendCommand(command, this->repeat_); }, this->freq_);
   }
 
   void control(const CoverCall &call) override {

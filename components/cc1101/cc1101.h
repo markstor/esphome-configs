@@ -18,11 +18,6 @@ class CC1101 : public Component {
   // void loop() override;
   void dump_config() override;
 
-  // Set time based cover values
-  void set_clk_pin(InternalGPIOPin *clk) { this->clk_pin_ = clk; }
-  void set_mosi_pin(InternalGPIOPin *mosi) { this->mosi_pin_ = mosi; }
-  void set_miso_pin(InternalGPIOPin *miso) { this->miso_pin_ = miso; }
-  void set_cs_pin(InternalGPIOPin *cs) { this->cs_pin_ = cs; }
   void set_emitter_pin(InternalGPIOPin *emitter) { this->emitter_pin_ = emitter; }
   void set_cc1101_frequency(double frequency) { this->cc1101_frequency_ = frequency; }
 
@@ -30,8 +25,8 @@ class CC1101 : public Component {
 
   template<typename Func> void transmit(Func &&action, double frequency = -1) {
     if (frequency > 0) {
-	ESP_LOGI(TAG, "Switching to %0.2fMHz", frequency);
-	ELECHOUSE_cc1101.setMHZ(frequency);
+    	ESP_LOGI(TAG, "Switching to %0.2fMHz", frequency);
+    	ELECHOUSE_cc1101.setMHZ(frequency);
     }
     ELECHOUSE_cc1101.SetTx();
     action();
@@ -39,10 +34,6 @@ class CC1101 : public Component {
   }
 
  protected:
-  InternalGPIOPin *clk_pin_{nullptr};
-  InternalGPIOPin *mosi_pin_{nullptr};
-  InternalGPIOPin *miso_pin_{nullptr};
-  InternalGPIOPin *cs_pin_{nullptr};
   InternalGPIOPin *emitter_pin_{nullptr};
   double cc1101_frequency_{433.42};
 };

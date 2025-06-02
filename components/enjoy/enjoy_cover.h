@@ -16,7 +16,7 @@ static const char *const TAG = "enjoy.cover";
 class EnjoyCover : public Cover, public Component {
 protected:
   double freq_;
-  cc1101::CC1101 cc1101_module_;
+  cc1101::CC1101 *cc1101_module_;
   EnjoyRemote *remote_;
   const char *storage_key_;
   uint32_t remote_address_;
@@ -38,9 +38,9 @@ public:
     return traits;
   }
 
-  void sendCC1101Command(Command command) {
-    ESP_LOGI(TAG, "Sending command %01x to blind %d. Counter: %d. Multicast: %d. Repeat: %d", command, this->freq_, this->blind_number_, this->enjoyRemote.getCurrentCode(), this->multicast_, this->repeat_);
-    this->cc1101_module_->transmit([=] { this->remote_->sendCommand(command, this->blind_number_, this->repeat_, this->multicast_); }, this->freq_);
+  void sendCC1101Command(EnjoyCommand command) {
+    ESP_LOGI(TAG, "Sending command %01x to blind %d. Counter: %d. Multicast: %d. Repeat: %d", command, this->freq_, this->blind_number_, this->remote_->getCurrentCode(), this->multicast_, this->repeat_);
+    this->cc1101_module_->transmit([this, command] { this->remote_->sendCommand(command, this->blind_number_, this->repeat_, this->multicast_); }, this->freq_);
   }
 
   void control(const CoverCall &call) override {
@@ -49,10 +49,10 @@ public:
 
       if (pos == COVER_OPEN) {
         ESP_LOGI(TAG, "OPEN");
-        sendCC1101Command(Command::Up);
+        sendCC1101Command(EnjoyCommand::Up);
       } else if (pos == COVER_CLOSED) {
         ESP_LOGI(TAG, "CLOSE");
-        sendCC1101Command(Command::Down);
+        sendCC1101Command(EnjoyCommand::Down);
       } else {
         ESP_LOGI(TAG, "WAT");
       }
@@ -63,13 +63,13 @@ public:
 
     if (call.get_stop()) {
       ESP_LOGI(TAG, "STOP");
-      sendCC1101Command(Command::My);
+      sendCC1101Command(EnjoyCommand::Stop);
     }
   }
 
   void program() {
     ESP_LOGI(TAG, "PROG");
-    sendCC1101Command(Command::Prog);
+    sendCC1101Command(EnjoyCommand::Prog);
   }
 
   void set_remote_address(uint32_t remote_address) { this->remote_address_ = remote_address; }
