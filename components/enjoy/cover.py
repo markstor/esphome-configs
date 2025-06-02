@@ -27,7 +27,7 @@ CONFIG_SCHEMA = cover.cover_schema(EnjoyCover).extend(
         cv.Optional(CONF_ENJOY_STORAGE_KEY, default="mandoEnjoy"): cv.All(
             cv.string, cv.Length(max=15)
         ),
-        cv.Optional(CONF_ENJOY_REPEAT, default=4): cv.int_range(min=1, max=16),
+        cv.Optional(CONF_ENJOY_REPEAT, default=1): cv.int_range(min=1, max=16),
         cv.Optional(CONF_ENJOY_FREQ, default=433.92): cv.float_range(min=391, max=464),
         cv.Optional(CONF_ENJOY_PROG_BUTTON): cv.use_id(button.Button),
     }
