@@ -16,6 +16,9 @@ The configurations and custom components in this repo are designed to simplify t
 ## Example configuration
 
 ```yaml
+external_components:
+  source: github://markstor/esphome-configs
+
 cc1101:
   id: "cc1101_id0"
   emitter_pin: 16
