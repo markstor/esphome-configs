@@ -21,7 +21,10 @@ external_components:
 
 cc1101:
   id: "cc1101_id0"
-  emitter_pin: 16
+  cs_pin: 5
+  gdo0_pin: 16
+  frequency: 433.92MHz
+  modulation_type: ASK/OOK
 
 button:
   - platform: template
@@ -37,6 +40,7 @@ cover:
     remote_address: !secret somfy_remote_address_1
     storage_key: "somfy1"
     cc1101_id: "cc1101_id0"
+    emitter_pin: 16
     program_button_id: "prog_somfy_1"
   
   - platform: somfy
@@ -44,12 +48,14 @@ cover:
     remote_address: !secret somfy_remote_address_2
     storage_key: "somfy2"
     cc1101_id: "cc1101_id0"
+    emitter_pin: 16
   
   - platform: enjoy
     id: "enjoy1"
     number: 0
     remote_address: !secret enjoy_remote_address
     cc1101_id: "cc1101_id0"
+    emitter_pin: 16
     program_button_id: "prog_enjoy_0"
   
   - platform: enjoy
@@ -57,18 +63,21 @@ cover:
     number: 1
     remote_address: !secret enjoy_remote_address
     cc1101_id: "cc1101_id0"
+    emitter_pin: 16
   
   - platform: enjoy
     id: "enjoy3"
     number: 2
     remote_address: !secret enjoy_remote_address
     cc1101_id: "cc1101_id0"
+    emitter_pin: 16
   
   - platform: enjoy
     id: "enjoy4"
     number: 3
     remote_address: !secret enjoy_remote_address
     cc1101_id: "cc1101_id0"
+    emitter_pin: 16
   
   - platform: enjoy
     id: "multi0"
@@ -77,6 +86,7 @@ cover:
     is_multiple: true
     remote_address: !secret enjoy_remote_address
     cc1101_id: "cc1101_id0"
+    emitter_pin: 16
 
 # we can wrap them as time based covers if desired.
 # Remember that only the components with names will be on home assistant

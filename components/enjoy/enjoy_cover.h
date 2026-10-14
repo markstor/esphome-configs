@@ -3,6 +3,7 @@
 #include "esphome/components/cover/cover.h"
 #include "esphome/components/button/button.h"
 #include "esphome/components/cc1101/cc1101.h"
+#include "esphome/core/gpio.h"
 #include "esphome/core/component.h"
 #include <EnjoyRemote.h>
 
@@ -16,7 +17,8 @@ static const char *const TAG = "enjoy.cover";
 class EnjoyCover : public Cover, public Component {
 protected:
   double freq_;
-  cc1101::CC1101 *cc1101_module_;
+  cc1101::CC1101Component *cc1101_module_;
+  InternalGPIOPin *emitter_pin_;
   EnjoyRemote *remote_;
   const char *storage_key_;
   uint32_t remote_address_;
@@ -26,7 +28,7 @@ protected:
 
 public:
   void setup() override {
-    remote_ = new EnjoyRemote(cc1101_module_->get_emitter_pin(), remote_address_, storage_key_);
+    remote_ = new EnjoyRemote(emitter_pin_->get_pin(), remote_address_, storage_key_);
   }
 
   CoverTraits get_traits() override {
@@ -39,8 +41,11 @@ public:
   }
 
   void sendCC1101Command(EnjoyCommand command) {
-    ESP_LOGI(TAG, "Sending command %01x to blind %d. Counter: %d. Multicast: %d. Repeat: %d", command, this->freq_, this->blind_number_, this->remote_->getCurrentCode(), this->multicast_, this->repeat_);
-    this->cc1101_module_->transmit([this, command] { this->remote_->sendCommand(command, this->blind_number_, this->repeat_, this->multicast_); }, this->freq_);
+    ESP_LOGI(TAG, "Sending command %01x at %0.2fMHz to blind %d. Counter: %d. Multicast: %d. Repeat: %d", command, this->freq_, this->blind_number_, this->remote_->getCurrentCode(), this->multicast_, this->repeat_);
+    this->cc1101_module_->set_frequency(this->freq_ * 1e6f);
+    this->cc1101_module_->begin_tx();
+    this->remote_->sendCommand(command, this->blind_number_, this->repeat_, this->multicast_);
+    this->cc1101_module_->set_idle();
   }
 
   void control(const CoverCall &call) override {
@@ -81,7 +86,8 @@ public:
   void set_repeat(int repeat) { this->repeat_ = repeat; }
   void set_multicast(bool multicast) { this->multicast_ = multicast; }
   void set_frequency(double freq) { this->freq_ = freq; }
-  void set_cc1101_module(cc1101::CC1101 *cc1101_module) { this->cc1101_module_ = cc1101_module; }
+  void set_cc1101_module(cc1101::CC1101Component *cc1101_module) { this->cc1101_module_ = cc1101_module; }
+  void set_emitter_pin(InternalGPIOPin *emitter_pin) { this->emitter_pin_ = emitter_pin; }
   void register_program_button(button::Button *button) {
 	  button->add_on_press_callback([this] { return this->program(); });
 	  

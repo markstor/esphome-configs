@@ -1,5 +1,6 @@
 import esphome.config_validation as cv
 import esphome.codegen as cg
+from esphome import pins
 from esphome.components import button, cc1101, cover
 
 CODEOWNERS = ["@markstor"]
@@ -11,6 +12,7 @@ EnjoyCover = enjoy_ns.class_("EnjoyCover", cover.Cover, cg.Component)
 
 CONF_ENJOY_REMOTE_ADDRESS = "remote_address"
 CONF_CC1101_MODULE = "cc1101_id"
+CONF_ENJOY_EMITTER_PIN = "emitter_pin"
 CONF_ENJOY_STORAGE_KEY = "storage_namespace"
 CONF_ENJOY_REPEAT = "repeat"
 CONF_ENJOY_BLIND_NUMBER = "number"
@@ -20,7 +22,8 @@ CONF_ENJOY_PROG_BUTTON = "program_button_id"
 
 CONFIG_SCHEMA = cover.cover_schema(EnjoyCover).extend(
     {
-        cv.Required(CONF_CC1101_MODULE): cv.use_id(cc1101.CC1101),
+        cv.Required(CONF_CC1101_MODULE): cv.use_id(cc1101.CC1101Component),
+        cv.Required(CONF_ENJOY_EMITTER_PIN): pins.internal_gpio_output_pin_schema,
         cv.Required(CONF_ENJOY_BLIND_NUMBER): cv.int_,
         cv.Required(CONF_ENJOY_REMOTE_ADDRESS): cv.int_,
         cv.Optional(CONF_ENJOY_MULTICAST, default=False): cv.boolean,
@@ -42,6 +45,8 @@ async def to_code(config):
 
     cc1101_module = await cg.get_variable(config[CONF_CC1101_MODULE])
     cg.add(var.set_cc1101_module(cc1101_module))
+    emitter_pin = await cg.gpio_pin_expression(config[CONF_ENJOY_EMITTER_PIN])
+    cg.add(var.set_emitter_pin(emitter_pin))
 
     cg.add(var.set_blind_number(config[CONF_ENJOY_BLIND_NUMBER]))
     cg.add(var.set_remote_address(config[CONF_ENJOY_REMOTE_ADDRESS]))

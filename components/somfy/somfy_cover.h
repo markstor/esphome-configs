@@ -3,6 +3,7 @@
 #include "esphome/components/cover/cover.h"
 #include "esphome/components/button/button.h"
 #include "esphome/components/cc1101/cc1101.h"
+#include "esphome/core/gpio.h"
 #include "esphome/core/component.h"
 #include <NVSRollingCodeStorage.h>
 #include <SomfyRemote.h>
@@ -18,7 +19,8 @@ static const char *const TAG = "somfy.cover";
 class SomfyCover : public Cover, public Component {
 protected:
   double freq_;
-  cc1101::CC1101 *cc1101_module_;
+  cc1101::CC1101Component *cc1101_module_;
+  InternalGPIOPin *emitter_pin_;
   SomfyRemote *remote_;
   NVSRollingCodeStorage *storage_;
   const char *storage_namespace_;
@@ -29,7 +31,7 @@ protected:
 public:
   void setup() override {
     storage_ = new NVSRollingCodeStorage(storage_namespace_, storage_key_);
-    remote_ = new SomfyRemote(cc1101_module_->get_emitter_pin(), remote_address_, storage_);
+    remote_ = new SomfyRemote(emitter_pin_->get_pin(), remote_address_, storage_);
   }
 
   CoverTraits get_traits() override {
@@ -43,7 +45,10 @@ public:
 
   void sendCC1101Command(::Command command) {
 	ESP_LOGI(TAG, "Sending command %01x", command);
-	this->cc1101_module_->transmit([this, command] { this->remote_->sendCommand(command, this->repeat_); }, this->freq_);
+  this->cc1101_module_->set_frequency(this->freq_ * 1e6f);
+  this->cc1101_module_->begin_tx();
+  this->remote_->sendCommand(command, this->repeat_);
+  this->cc1101_module_->set_idle();
   }
 
   void control(const CoverCall &call) override {
@@ -84,7 +89,8 @@ public:
   void set_repeat(int repeat) { this->repeat_ = repeat; }
   
   void set_frequency(double freq) { this->freq_ = freq; }
-  void set_cc1101_module(cc1101::CC1101 *cc1101_module) { this->cc1101_module_ = cc1101_module; }
+  void set_cc1101_module(cc1101::CC1101Component *cc1101_module) { this->cc1101_module_ = cc1101_module; }
+  void set_emitter_pin(InternalGPIOPin *emitter_pin) { this->emitter_pin_ = emitter_pin; }
   void register_program_button(button::Button *button) {
 	  button->add_on_press_callback([this] { return this->program(); });
   }
