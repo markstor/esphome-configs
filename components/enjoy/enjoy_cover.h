@@ -94,7 +94,7 @@ class EnjoyCover : public Cover, public Component {
   }
 
   uint8_t next_rolling_code_() {
-    Preferences preferences;
+    ::Preferences preferences;
     preferences.begin("EnjoyCodes", false);
     const uint8_t code = preferences.getUChar(this->storage_key_, 0) + 1;
     preferences.putUChar(this->storage_key_, code);

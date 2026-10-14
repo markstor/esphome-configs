@@ -17,7 +17,8 @@ The configurations and custom components in this repo are designed to simplify t
 
 ```yaml
 external_components:
-  source: github://markstor/esphome-configs
+  - source: github://markstor/esphome-configs
+    components: [enjoy, somfy]
 
 spi:
   clk_pin: GPIO18
@@ -45,6 +46,7 @@ remote_transmitter:
       - cc1101.begin_tx: cc1101_id0
   on_complete:
     then:
+      - cc1101.set_frequency: 433.92MHz
       - cc1101.begin_rx: cc1101_id0
 
 button:
@@ -207,12 +209,12 @@ cover:
   | `storage_namespace` | `somfy` | NVS namespace for the rolling code. Maximum 15 characters. |
   | `repeat` | `4` | Number of repeated frames after the initial frame. Range: 1-16. |
   | `frequency` | `433.42` | Somfy transmit frequency in MHz. Range: 391-464. |
-  | `restore_frequency` | `433.92` | Frequency to restore after transmission, in MHz. Set this to the configured `cc1101.frequency` if it differs from 433.92 MHz. Range: 391-464. |
   | `program_button_id` | None | Optional button ID that sends the Somfy PROG command when pressed. |
 
-  The CC1101 is tuned to `frequency` for Somfy transmissions and restored to
-  `restore_frequency` when the transmitter reports completion. The default restore
-  frequency matches the example's `cc1101.frequency`.
+The CC1101 is tuned to `frequency` for Somfy transmissions. The shared
+`remote_transmitter.on_complete` automation restores the radio to its configured
+baseline frequency before returning it to RX; update the `cc1101.set_frequency`
+value there if you change `cc1101.frequency`.
 
   ### Enjoy
 
