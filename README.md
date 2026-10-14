@@ -65,7 +65,6 @@ cover:
     storage_key: "somfy1"
     cc1101_id: "cc1101_id0"
     remote_transmitter_id: "rf_transmitter"
-    restore_frequency: 433.92
     program_button_id: "prog_somfy_1"
   
   - platform: somfy
@@ -74,7 +73,6 @@ cover:
     storage_key: "somfy2"
     cc1101_id: "cc1101_id0"
     remote_transmitter_id: "rf_transmitter"
-    restore_frequency: 433.92
     program_button_id: "prog_somfy_2"
   
   - platform: enjoy
@@ -185,6 +183,58 @@ cover:
     close_duration: 24.1s
     manual_control: true
 ```
+
+  ## Cover Platform Configuration
+
+  Both platforms also accept the standard ESPHome cover options, such as `id` and `name`.
+  The options below are specific to these components.
+
+  ### Somfy
+
+  Required options:
+
+  | Option | Description |
+  | --- | --- |
+  | `remote_address` | Somfy RTS remote address. |
+  | `storage_key` | NVS key for this cover's rolling code; use a unique key per remote. Maximum 15 characters. |
+  | `cc1101_id` | ID of the official `cc1101` component. |
+  | `remote_transmitter_id` | ID of the `remote_transmitter` used to send the waveform. |
+
+  Optional options:
+
+  | Option | Default | Description |
+  | --- | --- | --- |
+  | `storage_namespace` | `somfy` | NVS namespace for the rolling code. Maximum 15 characters. |
+  | `repeat` | `4` | Number of repeated frames after the initial frame. Range: 1-16. |
+  | `frequency` | `433.42` | Somfy transmit frequency in MHz. Range: 391-464. |
+  | `restore_frequency` | `433.92` | Frequency to restore after transmission, in MHz. Set this to the configured `cc1101.frequency` if it differs from 433.92 MHz. Range: 391-464. |
+  | `program_button_id` | None | Optional button ID that sends the Somfy PROG command when pressed. |
+
+  The CC1101 is tuned to `frequency` for Somfy transmissions and restored to
+  `restore_frequency` when the transmitter reports completion. The default restore
+  frequency matches the example's `cc1101.frequency`.
+
+  ### Enjoy
+
+  Required options:
+
+  | Option | Description |
+  | --- | --- |
+  | `remote_address` | Enjoy remote address. |
+  | `number` | Blind channel number, normally 0-3. |
+  | `remote_transmitter_id` | ID of the `remote_transmitter` used to send the waveform. |
+
+  Optional options:
+
+  | Option | Default | Description |
+  | --- | --- | --- |
+  | `is_multiple` | `false` | Send to multiple channels instead of only `number`. |
+  | `storage_namespace` | `mandoEnjoy` | Preferences key used for the rolling counter. Maximum 15 characters. |
+  | `repeat` | `1` | Number of repeated frames after the initial frame. Range: 1-16. |
+  | `program_button_id` | None | Optional button ID that sends the Enjoy PROG command when pressed. |
+
+  Enjoy does not set the CC1101 frequency itself; it uses the frequency configured
+  on the radio.
 
 ## Credits & Base Libraries
 
