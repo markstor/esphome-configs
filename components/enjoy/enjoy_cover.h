@@ -1,7 +1,6 @@
 #pragma once
 
 #include "esphome/components/button/button.h"
-#include "esphome/components/cc1101/cc1101.h"
 #include "esphome/components/cover/cover.h"
 #include "esphome/components/remote_base/remote_base.h"
 #include "esphome/core/component.h"
@@ -28,8 +27,6 @@ enum class EnjoyCommand : uint8_t {
 
 class EnjoyCover : public Cover, public Component {
  protected:
-  double freq_;
-  cc1101::CC1101Component *cc1101_module_;
   remote_base::RemoteTransmitterBase *remote_transmitter_;
   const char *storage_key_;
   uint32_t remote_address_;
@@ -60,9 +57,8 @@ class EnjoyCover : public Cover, public Component {
       this->append_frame_(timings, frame, false);
     }
 
-    ESP_LOGI(TAG, "Sending command %01x at %0.2fMHz to blind %d. Counter: %u. Multicast: %d. Repeat: %d",
-             static_cast<uint8_t>(command), this->freq_, this->blind_number_, rolling_code, this->multicast_, this->repeat_);
-    this->cc1101_module_->set_frequency(this->freq_ * 1e6f);
+    ESP_LOGI(TAG, "Sending command %01x to blind %d. Counter: %u. Multicast: %d. Repeat: %d",
+         static_cast<uint8_t>(command), this->blind_number_, rolling_code, this->multicast_, this->repeat_);
     auto call = this->remote_transmitter_->transmit();
     call.get_data()->set_data(timings);
     call.perform();
@@ -161,8 +157,6 @@ class EnjoyCover : public Cover, public Component {
   void set_blind_number(int blind_number) { this->blind_number_ = blind_number; }
   void set_repeat(int repeat) { this->repeat_ = repeat; }
   void set_multicast(bool multicast) { this->multicast_ = multicast; }
-  void set_frequency(double freq) { this->freq_ = freq; }
-  void set_cc1101_module(cc1101::CC1101Component *cc1101_module) { this->cc1101_module_ = cc1101_module; }
   void set_remote_transmitter(remote_base::RemoteTransmitterBase *transmitter) { this->remote_transmitter_ = transmitter; }
   void register_program_button(button::Button *button) {
     button->add_on_press_callback([this] { return this->program(); });

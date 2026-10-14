@@ -28,6 +28,7 @@ enum class SomfyCommand : uint8_t {
 class SomfyCover : public Cover, public Component {
 protected:
   double freq_;
+  double restore_freq_;
   cc1101::CC1101Component *cc1101_module_;
   remote_base::RemoteTransmitterBase *remote_transmitter_;
   const char *storage_namespace_;
@@ -36,6 +37,12 @@ protected:
   int repeat_;
 
 public:
+  void setup() override {
+    this->remote_transmitter_->get_complete_trigger()->add_callback([this]() {
+      this->cc1101_module_->set_frequency(this->restore_freq_ * 1e6f);
+    });
+  }
+
   CoverTraits get_traits() override {
     auto traits = CoverTraits();
     traits.set_is_assumed_state(true);
@@ -164,6 +171,7 @@ public:
   void set_repeat(int repeat) { this->repeat_ = repeat; }
   
   void set_frequency(double freq) { this->freq_ = freq; }
+  void set_restore_frequency(double freq) { this->restore_freq_ = freq; }
   void set_cc1101_module(cc1101::CC1101Component *cc1101_module) { this->cc1101_module_ = cc1101_module; }
   void set_remote_transmitter(remote_base::RemoteTransmitterBase *transmitter) { this->remote_transmitter_ = transmitter; }
   void register_program_button(button::Button *button) {

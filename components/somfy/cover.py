@@ -17,6 +17,7 @@ CONF_SOMFY_STORAGE_KEY = "storage_key"
 CONF_SOMFY_STORAGE_NAMESPACE = "storage_namespace"
 CONF_SOMFY_REPEAT = "repeat"
 CONF_SOMFY_FREQ = "frequency"
+CONF_SOMFY_RESTORE_FREQ = "restore_frequency"
 CONF_SOMFY_PROG_BUTTON = "program_button_id"
 
 CONFIG_SCHEMA = cover.cover_schema(SomfyCover).extend(
@@ -32,6 +33,7 @@ CONFIG_SCHEMA = cover.cover_schema(SomfyCover).extend(
         ),
         cv.Optional(CONF_SOMFY_REPEAT, default=4): cv.int_range(min=1, max=16),
         cv.Optional(CONF_SOMFY_FREQ, default=433.42): cv.float_range(min=391, max=464),
+        cv.Optional(CONF_SOMFY_RESTORE_FREQ, default=433.92): cv.float_range(min=391, max=464),
         cv.Optional(CONF_SOMFY_PROG_BUTTON): cv.use_id(button.Button),
     }
 ).extend(cv.COMPONENT_SCHEMA)
@@ -53,6 +55,7 @@ async def to_code(config):
     cg.add(var.set_storage_namespace(config[CONF_SOMFY_STORAGE_NAMESPACE]))
     cg.add(var.set_repeat(config[CONF_SOMFY_REPEAT]))
     cg.add(var.set_frequency(config[CONF_SOMFY_FREQ]))
+    cg.add(var.set_restore_frequency(config[CONF_SOMFY_RESTORE_FREQ]))
     if CONF_SOMFY_PROG_BUTTON in config:
         btn = await cg.get_variable(config[CONF_SOMFY_PROG_BUTTON])
         cg.add(var.register_program_button(btn))

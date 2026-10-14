@@ -65,6 +65,7 @@ cover:
     storage_key: "somfy1"
     cc1101_id: "cc1101_id0"
     remote_transmitter_id: "rf_transmitter"
+    restore_frequency: 433.92
     program_button_id: "prog_somfy_1"
   
   - platform: somfy
@@ -73,13 +74,13 @@ cover:
     storage_key: "somfy2"
     cc1101_id: "cc1101_id0"
     remote_transmitter_id: "rf_transmitter"
+    restore_frequency: 433.92
     program_button_id: "prog_somfy_2"
   
   - platform: enjoy
     id: "enjoy1"
     number: 0
     remote_address: !secret enjoy_remote_address
-    cc1101_id: "cc1101_id0"
     remote_transmitter_id: "rf_transmitter"
     program_button_id: "prog_enjoy_0"
   
@@ -87,21 +88,18 @@ cover:
     id: "enjoy2"
     number: 1
     remote_address: !secret enjoy_remote_address
-    cc1101_id: "cc1101_id0"
     remote_transmitter_id: "rf_transmitter"
   
   - platform: enjoy
     id: "enjoy3"
     number: 2
     remote_address: !secret enjoy_remote_address
-    cc1101_id: "cc1101_id0"
     remote_transmitter_id: "rf_transmitter"
   
   - platform: enjoy
     id: "enjoy4"
     number: 3
     remote_address: !secret enjoy_remote_address
-    cc1101_id: "cc1101_id0"
     remote_transmitter_id: "rf_transmitter"
   
   - platform: enjoy
@@ -110,7 +108,6 @@ cover:
     number: 0
     is_multiple: true
     remote_address: !secret enjoy_remote_address
-    cc1101_id: "cc1101_id0"
     remote_transmitter_id: "rf_transmitter"
 
 # Time-based wrappers provide position estimates for the assumed-state RF covers.
