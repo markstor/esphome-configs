@@ -1,18 +1,17 @@
 import esphome.config_validation as cv
 import esphome.codegen as cg
-from esphome import pins
-from esphome.components import button, cc1101, cover
+from esphome.components import button, cc1101, cover, remote_transmitter
 
 CODEOWNERS = ["@markstor"]
 
-DEPENDENCIES = ["esp32", "cc1101"]
+DEPENDENCIES = ["esp32", "cc1101", "remote_transmitter"]
 
 enjoy_ns = cg.esphome_ns.namespace("enjoy")
 EnjoyCover = enjoy_ns.class_("EnjoyCover", cover.Cover, cg.Component)
 
 CONF_ENJOY_REMOTE_ADDRESS = "remote_address"
 CONF_CC1101_MODULE = "cc1101_id"
-CONF_ENJOY_EMITTER_PIN = "emitter_pin"
+CONF_REMOTE_TRANSMITTER = "remote_transmitter_id"
 CONF_ENJOY_STORAGE_KEY = "storage_namespace"
 CONF_ENJOY_REPEAT = "repeat"
 CONF_ENJOY_BLIND_NUMBER = "number"
@@ -23,7 +22,9 @@ CONF_ENJOY_PROG_BUTTON = "program_button_id"
 CONFIG_SCHEMA = cover.cover_schema(EnjoyCover).extend(
     {
         cv.Required(CONF_CC1101_MODULE): cv.use_id(cc1101.CC1101Component),
-        cv.Required(CONF_ENJOY_EMITTER_PIN): pins.internal_gpio_output_pin_schema,
+        cv.Required(CONF_REMOTE_TRANSMITTER): cv.use_id(
+            remote_transmitter.RemoteTransmitterComponent
+        ),
         cv.Required(CONF_ENJOY_BLIND_NUMBER): cv.int_,
         cv.Required(CONF_ENJOY_REMOTE_ADDRESS): cv.int_,
         cv.Optional(CONF_ENJOY_MULTICAST, default=False): cv.boolean,
@@ -39,14 +40,13 @@ CONFIG_SCHEMA = cover.cover_schema(EnjoyCover).extend(
 
 async def to_code(config):
     cg.add_library("Preferences", None)
-    cg.add_library("EnjoyRemoteLib", "2.4.0")
     var = await cover.new_cover(config)
     await cg.register_component(var, config)
 
     cc1101_module = await cg.get_variable(config[CONF_CC1101_MODULE])
     cg.add(var.set_cc1101_module(cc1101_module))
-    emitter_pin = await cg.gpio_pin_expression(config[CONF_ENJOY_EMITTER_PIN])
-    cg.add(var.set_emitter_pin(emitter_pin))
+    transmitter = await cg.get_variable(config[CONF_REMOTE_TRANSMITTER])
+    cg.add(var.set_remote_transmitter(transmitter))
 
     cg.add(var.set_blind_number(config[CONF_ENJOY_BLIND_NUMBER]))
     cg.add(var.set_remote_address(config[CONF_ENJOY_REMOTE_ADDRESS]))
