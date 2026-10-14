@@ -47,7 +47,8 @@ public:
 
   void sendCC1101Command(SomfyCommand command) {
     std::array<uint8_t, 7> frame{};
-    this->build_frame_(frame, command, this->next_rolling_code_());
+    const uint16_t rolling_code = this->next_rolling_code_();
+    this->build_frame_(frame, command, rolling_code);
     std::vector<int32_t> timings;
     timings.reserve(180 * (this->repeat_ + 1));
     this->append_frame_(timings, frame, 2);
@@ -55,7 +56,8 @@ public:
       this->append_frame_(timings, frame, 7);
     }
 
-    ESP_LOGI(TAG, "Sending command %01x at %0.2fMHz", static_cast<uint8_t>(command), this->freq_);
+    ESP_LOGI(TAG, "Sending command %01x at %0.2fMHz with rolling code %u", static_cast<uint8_t>(command),
+         this->freq_, static_cast<unsigned>(rolling_code));
     this->cc1101_module_->set_frequency(this->freq_ * 1e6f);
     auto call = this->remote_transmitter_->transmit();
     call.get_data()->set_data(timings);
