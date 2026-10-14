@@ -19,6 +19,11 @@ The configurations and custom components in this repo are designed to simplify t
 external_components:
   source: github://markstor/esphome-configs
 
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+  miso_pin: GPIO19
+
 cc1101:
   id: "cc1101_id0"
   cs_pin: 5
@@ -45,10 +50,13 @@ remote_transmitter:
 button:
   - platform: template
     id: "prog_somfy_1"
-    name: "PROG button 1"
-  # This button without name won't be exposed in HA
+    name: "Somfy 1 Program"
+  - platform: template
+    id: "prog_somfy_2"
+    name: "Somfy 2 Program"
   - platform: template
     id: "prog_enjoy_0"
+    name: "Enjoy Program"
 
 cover:
   - platform: somfy
@@ -65,6 +73,7 @@ cover:
     storage_key: "somfy2"
     cc1101_id: "cc1101_id0"
     remote_transmitter_id: "rf_transmitter"
+    program_button_id: "prog_somfy_2"
   
   - platform: enjoy
     id: "enjoy1"
@@ -104,8 +113,7 @@ cover:
     cc1101_id: "cc1101_id0"
     remote_transmitter_id: "rf_transmitter"
 
-# we can wrap them as time based covers if desired.
-# Remember that only the components with names will be on home assistant
+# Time-based wrappers provide position estimates for the assumed-state RF covers.
   - platform: time_based
     name: "Enjoy Blind"
     open_action: 
@@ -116,7 +124,7 @@ cover:
       - cover.stop: enjoy1
     open_duration: 25.4s
     close_duration: 24.9s
-    manual_control: True
+    manual_control: true
       
   - platform: time_based
     name: "Enjoy Blind2"
@@ -128,7 +136,7 @@ cover:
       - cover.stop: enjoy2
     open_duration: 24.4s
     close_duration: 23.7s
-    manual_control: True
+    manual_control: true
     
   - platform: time_based
     name: "Enjoy Blind3"
@@ -140,7 +148,7 @@ cover:
       - cover.stop: enjoy3
     open_duration: 16.7s
     close_duration: 16.5s
-    manual_control: True
+    manual_control: true
     
   - platform: time_based
     name: "Enjoy Blind4"
@@ -152,7 +160,33 @@ cover:
       - cover.stop: enjoy4
     open_duration: 15.8s
     close_duration: 15.5s
-    manual_control: True
+    manual_control: true
+
+  - platform: time_based
+    id: "somfy_cover_1"
+    name: "Somfy Cover"
+    open_action:
+      - cover.open: somfy1
+    close_action:
+      - cover.close: somfy1
+    stop_action:
+      - cover.stop: somfy1
+    open_duration: 24.8s
+    close_duration: 24.3s
+    manual_control: true
+
+  - platform: time_based
+    id: "somfy_cover_2"
+    name: "Somfy Cover 2"
+    open_action:
+      - cover.open: somfy2
+    close_action:
+      - cover.close: somfy2
+    stop_action:
+      - cover.stop: somfy2
+    open_duration: 24.3s
+    close_duration: 24.1s
+    manual_control: true
 ```
 
 ## Credits & Base Libraries

@@ -5,7 +5,7 @@
 #include "esphome/components/cc1101/cc1101.h"
 #include "esphome/components/remote_base/remote_base.h"
 #include "esphome/core/component.h"
-#include <NVSRollingCodeStorage.h>
+#include <Preferences.h>
 #include <array>
 #include <vector>
 
@@ -30,17 +30,12 @@ protected:
   double freq_;
   cc1101::CC1101Component *cc1101_module_;
   remote_base::RemoteTransmitterBase *remote_transmitter_;
-  NVSRollingCodeStorage *storage_;
   const char *storage_namespace_;
   const char *storage_key_;
   uint32_t remote_address_;
   int repeat_;
 
 public:
-  void setup() override {
-    storage_ = new NVSRollingCodeStorage(storage_namespace_, storage_key_);
-  }
-
   CoverTraits get_traits() override {
     auto traits = CoverTraits();
     traits.set_is_assumed_state(true);
@@ -52,7 +47,7 @@ public:
 
   void sendCC1101Command(SomfyCommand command) {
     std::array<uint8_t, 7> frame{};
-    this->build_frame_(frame, command, this->storage_->next_code());
+    this->build_frame_(frame, command, this->next_rolling_code_());
     std::vector<int32_t> timings;
     timings.reserve(180 * (this->repeat_ + 1));
     this->append_frame_(timings, frame, 2);
@@ -61,7 +56,7 @@ public:
     }
 
     ESP_LOGI(TAG, "Sending command %01x at %0.2fMHz", static_cast<uint8_t>(command), this->freq_);
-  this->cc1101_module_->set_frequency(this->freq_ * 1e6f);
+    this->cc1101_module_->set_frequency(this->freq_ * 1e6f);
     auto call = this->remote_transmitter_->transmit();
     call.get_data()->set_data(timings);
     call.perform();
@@ -94,6 +89,19 @@ public:
   void program() {
     ESP_LOGI(TAG, "PROG");
     sendCC1101Command(SomfyCommand::Prog);
+  }
+
+  uint16_t next_rolling_code_() {
+    ::Preferences preferences;
+    if (!preferences.begin(this->storage_namespace_, false)) {
+      ESP_LOGE(TAG, "Failed to open rolling-code namespace '%s'", this->storage_namespace_);
+      return 1;
+    }
+
+    const uint16_t code = preferences.getUShort(this->storage_key_, 1);
+    preferences.putUShort(this->storage_key_, code + 1);
+    preferences.end();
+    return code;
   }
 
   void build_frame_(std::array<uint8_t, 7> &frame, SomfyCommand command, uint16_t rolling_code) {
