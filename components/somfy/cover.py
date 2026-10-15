@@ -35,7 +35,11 @@ CONFIG_SCHEMA = cover.cover_schema(SomfyCover).extend(
 
 async def to_code(config):
     cg.add_library("EEPROM", None)
-    cg.add_library("Somfy_Remote_Lib", "0.4.1")
+    cg.add_library(
+        "Somfy_Remote_Lib",
+        None,
+        "https://github.com/Legion2/Somfy_Remote_Lib.git#v0.4.1",
+    )
     
     var = await cover.new_cover(config)
     await cg.register_component(var, config)
