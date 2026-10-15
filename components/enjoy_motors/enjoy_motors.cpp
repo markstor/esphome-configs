@@ -1,6 +1,7 @@
 #include "enjoy_motors.h"
+#include <esp_err.h>
 #include "esphome/core/log.h"
-#include <Preferences.h>
+#include <nvs.h>
 #include <array>
 #include <cstddef>
 #include <vector>
@@ -81,19 +82,33 @@ bool EnjoyRemote::next_rolling_code_(uint8_t *code) {
     return false;
   }
 
-  Preferences preferences;
-  if (!preferences.begin(this->storage_namespace_, false)) {
-    ESP_LOGE(TAG, "Failed to open preferences namespace '%s'", this->storage_namespace_);
+  nvs_handle_t handle;
+  esp_err_t err = nvs_open(this->storage_namespace_, NVS_READWRITE, &handle);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to open NVS namespace '%s': %s", this->storage_namespace_, esp_err_to_name(err));
     return false;
   }
 
-  *code = static_cast<uint8_t>(preferences.getUChar(this->storage_key_, 0) + 1);
-  const size_t bytes_written = preferences.putUChar(this->storage_key_, *code);
-  preferences.end();
-  if (bytes_written != sizeof(*code)) {
-    ESP_LOGE(TAG, "Failed to persist rolling code using key '%s'", this->storage_key_);
+  uint8_t stored_code = 0;
+  err = nvs_get_u8(handle, this->storage_key_, &stored_code);
+  if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
+    ESP_LOGE(TAG, "Failed to read rolling code using key '%s': %s", this->storage_key_, esp_err_to_name(err));
+    nvs_close(handle);
     return false;
   }
+
+  const uint8_t next_code = static_cast<uint8_t>(stored_code + 1);
+  err = nvs_set_u8(handle, this->storage_key_, next_code);
+  if (err == ESP_OK) {
+    err = nvs_commit(handle);
+  }
+  nvs_close(handle);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to persist rolling code using key '%s': %s", this->storage_key_, esp_err_to_name(err));
+    return false;
+  }
+
+  *code = next_code;
   return true;
 }
 
