@@ -14,7 +14,7 @@ static constexpr uint16_t SYMBOL_US = 418;
 
 void EnjoyRemote::dump_config() {
   ESP_LOGCONFIG(TAG, "Enjoy command component:");
-  ESP_LOGCONFIG(TAG, "  Remote address: 0x%03X", this->remote_address_);
+  ESP_LOGCONFIG(TAG, "  Remote address: 0x%03X", static_cast<unsigned int>(this->remote_address_));
   ESP_LOGCONFIG(TAG, "  Repeat count: %d", this->repeat_);
   ESP_LOGCONFIG(TAG, "  Storage namespace: %s", this->storage_namespace_);
   ESP_LOGCONFIG(TAG, "  Storage key: %s", this->storage_key_);
