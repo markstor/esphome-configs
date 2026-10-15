@@ -1,24 +1,16 @@
-# ESPHome Configs
+# ESPHome Enjoy cover remote
 
-This repository contains a collection of [ESPHome](https://esphome.io/) configuration files and custom components for various home automation devices, with a focus on remote control and integration of devices such as blinds, covers, and other RF-based hardware.
+This repository contains an ESPHome external component for transmitting Enjoy
+blind commands with a remote transmitter such as a CC1101. The `enjoy_motors:`
+component handles RF commands and rolling-code storage; ESPHome's standard
+`time_based` cover handles position estimation.
 
-## Overview
-
-The configurations and custom components in this repo are designed to simplify the integration of RF-controlled devices with popular home automation systems like Home Assistant using ESPHome. The solutions here are especially useful for scenarios involving Somfy blinds and other similar RF devices.
-
-## Features
-
-- Ready-to-use ESPHome YAML configurations for common RF-controlled devices.
-- Custom components for advanced RF communication and cover control.
-- Example wiring diagrams and pinouts for supported hardware.
-- Modular structure for easy adaptation and extension to new devices.
-
-## Example configuration
+## Example
 
 ```yaml
 external_components:
   - source: github://markstor/esphome-configs
-    components: [enjoy, somfy]
+    components: [enjoy_motors]
 
 spi:
   clk_pin: GPIO18
@@ -26,7 +18,7 @@ spi:
   miso_pin: GPIO19
 
 cc1101:
-  id: "cc1101_id0"
+  id: cc1101_id0
   cs_pin: 5
   gdo0_pin:
     number: 16
@@ -35,7 +27,7 @@ cc1101:
   modulation_type: ASK/OOK
 
 remote_transmitter:
-  id: "rf_transmitter"
+  id: rf_transmitter
   pin:
     number: 16
     allow_other_uses: true
@@ -46,228 +38,97 @@ remote_transmitter:
       - cc1101.begin_tx: cc1101_id0
   on_complete:
     then:
-      - cc1101.set_frequency: 433.92MHz
       - cc1101.begin_rx: cc1101_id0
 
 button:
   - platform: template
-    id: "prog_somfy_1"
-    name: "Somfy 1 Program"
-  - platform: template
-    id: "prog_somfy_2"
-    name: "Somfy 2 Program"
-  - platform: template
-    id: "prog_enjoy_0"
+    id: prog_enjoy_0
     name: "Enjoy Program"
 
-cover:
-  - platform: somfy
-    id: "somfy1"
-    remote_address: !secret somfy_remote_address_1
-    storage_key: "somfy1"
-    cc1101_id: "cc1101_id0"
-    remote_transmitter_id: "rf_transmitter"
-    program_button_id: "prog_somfy_1"
-  
-  - platform: somfy
-    id: "somfy2"
-    remote_address: !secret somfy_remote_address_2
-    storage_key: "somfy2"
-    cc1101_id: "cc1101_id0"
-    remote_transmitter_id: "rf_transmitter"
-    program_button_id: "prog_somfy_2"
-  
-  - platform: enjoy
-    id: "enjoy1"
+enjoy_motors:
+  - id: enjoy_blind_0
     number: 0
     remote_address: !secret enjoy_remote_address
-    remote_transmitter_id: "rf_transmitter"
-    program_button_id: "prog_enjoy_0"
-  
-  - platform: enjoy
-    id: "enjoy2"
-    number: 1
-    remote_address: !secret enjoy_remote_address
-    remote_transmitter_id: "rf_transmitter"
-  
-  - platform: enjoy
-    id: "enjoy3"
-    number: 2
-    remote_address: !secret enjoy_remote_address
-    remote_transmitter_id: "rf_transmitter"
-  
-  - platform: enjoy
-    id: "enjoy4"
-    number: 3
-    remote_address: !secret enjoy_remote_address
-    remote_transmitter_id: "rf_transmitter"
-  
-  - platform: enjoy
-    id: "multi0"
-    name: "Multi Enjoy Blind"
-    number: 0
-    is_multiple: true
-    remote_address: !secret enjoy_remote_address
-    remote_transmitter_id: "rf_transmitter"
+    remote_transmitter: rf_transmitter
+    prog_button: prog_enjoy_0
 
-# Time-based wrappers provide position estimates for the assumed-state RF covers.
+cover:
   - platform: time_based
+    id: enjoy_cover_0
     name: "Enjoy Blind"
-    open_action: 
-      - cover.open: enjoy1
-    close_action:
-      - cover.close: enjoy1
-    stop_action: 
-      - cover.stop: enjoy1
+    device_class: shutter
     open_duration: 25.4s
     close_duration: 24.9s
-    manual_control: true
-      
-  - platform: time_based
-    name: "Enjoy Blind2"
-    open_action: 
-      - cover.open: enjoy2
-    close_action:
-      - cover.close: enjoy2
-    stop_action: 
-      - cover.stop: enjoy2
-    open_duration: 24.4s
-    close_duration: 23.7s
-    manual_control: true
-    
-  - platform: time_based
-    name: "Enjoy Blind3"
-    open_action: 
-      - cover.open: enjoy3
-    close_action:
-      - cover.close: enjoy3
-    stop_action: 
-      - cover.stop: enjoy3
-    open_duration: 16.7s
-    close_duration: 16.5s
-    manual_control: true
-    
-  - platform: time_based
-    name: "Enjoy Blind4"
-    open_action: 
-      - cover.open: enjoy4
-    close_action:
-      - cover.close: enjoy4
-    stop_action: 
-      - cover.stop: enjoy4
-    open_duration: 15.8s
-    close_duration: 15.5s
-    manual_control: true
-
-  - platform: time_based
-    id: "somfy_cover_1"
-    name: "Somfy Cover"
     open_action:
-      - cover.open: somfy1
+      - enjoy_motors.open: enjoy_blind_0
     close_action:
-      - cover.close: somfy1
+      - enjoy_motors.close: enjoy_blind_0
     stop_action:
-      - cover.stop: somfy1
-    open_duration: 24.8s
-    close_duration: 24.3s
-    manual_control: true
-
-  - platform: time_based
-    id: "somfy_cover_2"
-    name: "Somfy Cover 2"
-    open_action:
-      - cover.open: somfy2
-    close_action:
-      - cover.close: somfy2
-    stop_action:
-      - cover.stop: somfy2
-    open_duration: 24.3s
-    close_duration: 24.1s
-    manual_control: true
+      - enjoy_motors.stop: enjoy_blind_0
 ```
 
-  ## Cover Platform Configuration
+Add one `enjoy_motors:` entry per channel. Set `number` from 0 to 3. To send a
+command to multiple channels, set `is_multiple: true`. The component does not set the
+CC1101 frequency; it uses the frequency configured on the radio.
 
-  Both platforms also accept the standard ESPHome cover options, such as `id` and `name`.
-  The options below are specific to these components.
+## Enjoy component options
 
-  ### Somfy
+| Option | Required | Default | Description |
+| --- | --- | --- | --- |
+| `id` | Yes | | ID used by Enjoy actions. |
+| `remote_transmitter` | Yes | | ID of the `remote_transmitter` used to send the waveform. |
+| `remote_address` | Yes | | Enjoy remote address, from `0` to `4095`. |
+| `number` | Yes | | Blind channel, from `0` to `3`. |
+| `is_multiple` | No | `false` | Send to multiple channels instead of only `number`. |
+| `storage_namespace` | No | `EnjoyCodes` | ESP32 Preferences namespace for the rolling counter (maximum 15 characters). |
+| `storage_key` | No | `mandoEnjoy` | Preferences key for the rolling counter (maximum 15 characters). |
+| `repeat` | No | `1` | Repeated frames after the initial frame (from `1` to `16`). |
+| `prog_button` | No | | Optional button ID that sends the Enjoy PROG command when pressed. |
 
-  Required options:
+The rolling counter is shared by configurations that use the same Preferences
+namespace and key. Use the same pair for channels controlled by the same Enjoy
+remote address. Existing `cover: - platform: enjoy` configurations used the
+old `storage_namespace` value as the Preferences key; when migrating, move that
+value to `storage_key` and keep `storage_namespace: "EnjoyCodes"` to preserve
+the saved counter.
 
-  | Option | Description |
-  | --- | --- |
-  | `remote_address` | Somfy RTS remote address. |
-  | `storage_key` | NVS key for this cover's rolling code; use a unique key per remote. Maximum 15 characters. |
-  | `cc1101_id` | ID of the official `cc1101` component. |
-  | `remote_transmitter_id` | ID of the `remote_transmitter` used to send the waveform. |
+## Actions
 
-  Optional options:
+The commands can be called directly from automations or from a
+`time_based` cover:
 
-  | Option | Default | Description |
-  | --- | --- | --- |
-  | `storage_namespace` | `somfy` | NVS namespace for the rolling code. Maximum 15 characters. |
-  | `repeat` | `4` | Number of repeated frames after the initial frame. Range: 1-16. |
-  | `frequency` | `433.42` | Somfy transmit frequency in MHz. Range: 391-464. |
-  | `program_button_id` | None | Optional button ID that sends the Somfy PROG command when pressed. |
+- `enjoy_motors.open`
+- `enjoy_motors.close`
+- `enjoy_motors.stop`
+- `enjoy_motors.program`
+- `enjoy_motors.send` for a selected command and optional repeat count
 
-The CC1101 is tuned to `frequency` for Somfy transmissions. The shared
-`remote_transmitter.on_complete` automation restores the radio to its configured
-baseline frequency before returning it to RX; update the `cc1101.set_frequency`
-value there if you change `cc1101.frequency`.
+For example, a template button can send PROG without attaching it through
+`prog_button`:
 
-  ### Enjoy
+```yaml
+button:
+  - platform: template
+    name: "Enjoy Program"
+    on_press:
+      - enjoy_motors.program: enjoy_blind_0
+```
 
-  Required options:
-
-  | Option | Description |
-  | --- | --- |
-  | `remote_address` | Enjoy remote address. |
-  | `number` | Blind channel number, normally 0-3. |
-  | `remote_transmitter_id` | ID of the `remote_transmitter` used to send the waveform. |
-
-  Optional options:
-
-  | Option | Default | Description |
-  | --- | --- | --- |
-  | `is_multiple` | `false` | Send to multiple channels instead of only `number`. |
-  | `storage_namespace` | `mandoEnjoy` | Preferences key used for the rolling counter. Maximum 15 characters. |
-  | `repeat` | `1` | Number of repeated frames after the initial frame. Range: 1-16. |
-  | `program_button_id` | None | Optional button ID that sends the Enjoy PROG command when pressed. |
-
-  Enjoy does not set the CC1101 frequency itself; it uses the frequency configured
-  on the radio.
-
-## Credits & Base Libraries
-
-This repository is based on and incorporates significant work from the following projects:
-
-- **[Enjoy_Remote_Lib](https://github.com/markstor/Enjoy_Remote_Lib) by [me](https://github.com/markstor)**  
-  Many of the RF decoding and encoding routines originate from this library, which provides foundational support for handling Enjoy remote protocols.
-
-- **[esphome-somfy-cover-remote](https://github.com/HarmEllis/esphome-somfy-cover-remote) by [HarmEllis](https://github.com/HarmEllis)**  
-  This project provided inspiration and code for integrating Somfy RTS covers with ESPHome and Home Assistant.
-
-- **[esphome-cc1101](https://github.com/HarmEllis/esphome-cc1101) by [HarmEllis](https://github.com/HarmEllis)**  
-  This repository offered valuable resources for using the CC1101 RF transceiver with ESPHome, enabling reliable RF communication in these configs.
-
-I had to redo some bits to be able to shift frequency bands, as my setup uses the CC1101 module for different things.
+`enjoy_motors.send` accepts `UP`, `DOWN`, `STOP`, or `PROG`; `repeat_count` may be a
+literal value or a lambda result from `1` to `16`.
 
 ## Hardware
 
-Typical hardware supported includes:
+Typical hardware includes an ESP32 and a CC1101 RF transceiver module. Configure
+the radio for the frequency and modulation used by your Enjoy remotes.
 
-- ESP8266/ESP32 boards
-- CC1101 RF transceiver modules
-- Relays and input buttons for local control
+## Credits
 
-Refer to specific configuration files for wiring diagrams and hardware requirements.
-
-## Contributing
-
-Contributions are welcome! Feel free to submit issues, pull requests, or suggestions for additional device support.
+- [Enjoy_Remote_Lib](https://github.com/markstor/Enjoy_Remote_Lib), which
+  provides foundational RF decoding and encoding routines.
+- [esphome-cc1101](https://github.com/HarmEllis/esphome-cc1101), for CC1101
+  integration examples.
 
 ## License
 
-This repository is released under the MIT License. Please see [LICENSE](LICENSE) for details.  
-Credit is given to all upstream projects and contributors.
+This repository is released under the MIT License. See [LICENSE](LICENSE).
