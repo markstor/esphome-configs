@@ -39,7 +39,10 @@ public:
   }
 
   void sendCC1101Command(EnjoyCommand command) {
-    ESP_LOGI(TAG, "Sending command %01x to blind %d. Counter: %d. Multicast: %d. Repeat: %d", command, this->freq_, this->blind_number_, this->remote_->getCurrentCode(), this->multicast_, this->repeat_);
+    const uint8_t stored_counter = this->remote_->getCurrentCode();
+    ESP_LOGI(TAG, "Sending command %02x at %.2fMHz to blind %d. Stored counter: %u; sending: %u. Multicast: %d. Repeat: %d",
+             static_cast<unsigned>(command), this->freq_, this->blind_number_, static_cast<unsigned>(stored_counter),
+             static_cast<unsigned>(static_cast<uint8_t>(stored_counter + 1)), this->multicast_, this->repeat_);
     this->cc1101_module_->transmit([this, command] { this->remote_->sendCommand(command, this->blind_number_, this->repeat_, this->multicast_); }, this->freq_);
   }
 
