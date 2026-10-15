@@ -9,7 +9,7 @@ DEPENDENCIES = ["esp32", "remote_transmitter"]
 MULTI_CONF = True
 
 enjoy_motors_ns = cg.esphome_ns.namespace("enjoy_motors")
-EnjoyRemote = enjoy_motors_ns.class_("EnjoyRemote", cg.Component, "enjoy.h")
+EnjoyRemote = enjoy_motors_ns.class_("EnjoyRemote", cg.Component)
 EnjoyCommand = enjoy_motors_ns.enum("EnjoyCommand", is_class=True)
 SendAction = enjoy_motors_ns.class_("SendAction", automation.Action)
 
