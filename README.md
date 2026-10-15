@@ -18,19 +18,14 @@ spi:
   miso_pin: GPIO19
 
 cc1101:
-  id: cc1101_id0
-  cs_pin: 5
-  gdo0_pin:
-    number: 16
-    allow_other_uses: true
+  id: "cc1101_id0"
+  cs_pin: GPIO5
   frequency: 433.92MHz
   modulation_type: ASK/OOK
 
 remote_transmitter:
-  id: rf_transmitter
-  pin:
-    number: 16
-    allow_other_uses: true
+  id: "rf_transmitter"
+  pin: GPIO16
   carrier_duty_percent: 100%
   non_blocking: false
   on_transmit:
@@ -42,15 +37,17 @@ remote_transmitter:
 
 button:
   - platform: template
-    id: prog_enjoy_0
     name: "Enjoy Program"
+    on_press:
+      - enjoy_motors.program:
+          id: enjoy_remote
+          number: 1
 
 enjoy_motors:
-  - id: enjoy_blind_0
-    number: 0
+  - id: enjoy_remote
     remote_address: !secret enjoy_remote_address
     remote_transmitter: rf_transmitter
-    prog_button: prog_enjoy_0
+    storage_key: "mandoEnjoy"
 
 cover:
   - platform: time_based
@@ -60,16 +57,25 @@ cover:
     open_duration: 25.4s
     close_duration: 24.9s
     open_action:
-      - enjoy_motors.open: enjoy_blind_0
+      - enjoy_motors.open:
+          id: enjoy_remote
+          number: 1
     close_action:
-      - enjoy_motors.close: enjoy_blind_0
+      - enjoy_motors.close:
+          id: enjoy_remote
+          number: 1
     stop_action:
-      - enjoy_motors.stop: enjoy_blind_0
+      - enjoy_motors.stop:
+          id: enjoy_remote
+          number: 1
 ```
 
-Add one `enjoy_motors:` entry per channel. Set `number` from 0 to 3. To send a
-command to multiple channels, set `is_multiple: true`. The component does not set the
-CC1101 frequency; it uses the frequency configured on the radio.
+Add one `enjoy_motors:` entry per remote address, and use its ID in the actions.
+Each action selects a blind with `number` from 1 to 4, matching commercial
+remote labels. The component converts this to the protocol's zero-based channel
+index. Set `is_multiple: true`
+on an action to address all channels. The component does not set the CC1101
+frequency; it uses the frequency configured on the radio.
 
 ## Enjoy component options
 
@@ -78,19 +84,25 @@ CC1101 frequency; it uses the frequency configured on the radio.
 | `id` | Yes | | ID used by Enjoy actions. |
 | `remote_transmitter` | Yes | | ID of the `remote_transmitter` used to send the waveform. |
 | `remote_address` | Yes | | Enjoy remote address, from `0` to `4095`. |
-| `number` | Yes | | Blind channel, from `0` to `3`. |
-| `is_multiple` | No | `false` | Send to multiple channels instead of only `number`. |
 | `storage_namespace` | No | `EnjoyCodes` | ESP32 Preferences namespace for the rolling counter (maximum 15 characters). |
-| `storage_key` | No | `mandoEnjoy` | Preferences key for the rolling counter (maximum 15 characters). |
+| `storage_key` | Yes | | Preferences key for this remote's rolling counter (maximum 15 characters). |
 | `repeat` | No | `1` | Repeated frames after the initial frame (from `1` to `16`). |
-| `prog_button` | No | | Optional button ID that sends the Enjoy PROG command when pressed. |
 
-The rolling counter is shared by configurations that use the same Preferences
-namespace and key. Use the same pair for channels controlled by the same Enjoy
-remote address. Existing `cover: - platform: enjoy` configurations used the
-old `storage_namespace` value as the Preferences key; when migrating, move that
-value to `storage_key` and keep `storage_namespace: "EnjoyCodes"` to preserve
-the saved counter.
+Configure one sender per remote address and give each remote address a unique
+`storage_key`. That sender's counter is shared by all actions that select a
+blind or use multicast. To preserve a counter from the old Enjoy cover
+component, use the old `storage_namespace` value as the new `storage_key` (the
+old default was `mandoEnjoy`) and keep `storage_namespace: "EnjoyCodes"`.
+
+## Action options
+
+All actions require the sender `id` and a `number` from `1` to `4`, matching
+the channel labels on commercial remotes.
+`is_multiple` is optional and defaults to `false`.
+
+Sixteen-channel remotes are not confirmed as supported by this implementation.
+The RF frame currently uses the four-channel selection/multicast encoding;
+support for other channel layouts needs protocol verification.
 
 ## Actions
 
@@ -104,18 +116,29 @@ The commands can be called directly from automations or from a
 - `enjoy_motors.send` for a selected command and optional repeat count
 
 For example, a template button can send PROG without attaching it through
-`prog_button`:
+component configuration:
 
 ```yaml
 button:
   - platform: template
     name: "Enjoy Program"
     on_press:
-      - enjoy_motors.program: enjoy_blind_0
+      - enjoy_motors.program:
+          id: enjoy_remote
+          number: 1
 ```
 
-`enjoy_motors.send` accepts `UP`, `DOWN`, `STOP`, or `PROG`; `repeat_count` may be a
-literal value or a lambda result from `1` to `16`.
+Set `is_multiple: true` on a command to send it to all channels, for example:
+
+```yaml
+- enjoy_motors.close:
+    id: enjoy_remote
+    number: 1
+    is_multiple: true
+```
+
+`enjoy_motors.send` accepts `UP`, `DOWN`, `STOP`, or `PROG`; `repeat_count`
+may be a literal value or a lambda result from `1` to `16`.
 
 ## Hardware
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "esphome/components/button/button.h"
 #include "esphome/components/remote_base/remote_base.h"
 #include "esphome/core/automation.h"
 #include "esphome/core/component.h"
@@ -14,7 +13,7 @@
 namespace esphome {
 namespace enjoy_motors {
 
-static const char *const TAG = "enjoy";
+static const char *const TAG = "enjoy_motors";
 static constexpr uint16_t SYMBOL_US = 418;
 
 enum class EnjoyCommand : uint8_t {
@@ -26,44 +25,33 @@ enum class EnjoyCommand : uint8_t {
 
 class EnjoyRemote : public Component {
  public:
-  void setup() override {
-    if (this->prog_button_ != nullptr) {
-      this->prog_button_->add_on_press_callback([this] { this->program(); });
-    }
-  }
-
   void dump_config() override {
     ESP_LOGCONFIG(TAG, "Enjoy command component:");
     ESP_LOGCONFIG(TAG, "  Remote address: 0x%03X", this->remote_address_);
-    ESP_LOGCONFIG(TAG, "  Blind number: %d", this->blind_number_);
-    ESP_LOGCONFIG(TAG, "  Multicast: %s", YESNO(this->multicast_));
     ESP_LOGCONFIG(TAG, "  Repeat count: %d", this->repeat_);
     ESP_LOGCONFIG(TAG, "  Storage namespace: %s", this->storage_namespace_);
     ESP_LOGCONFIG(TAG, "  Storage key: %s", this->storage_key_);
-    ESP_LOGCONFIG(TAG, "  Program button attached: %s", YESNO(this->prog_button_ != nullptr));
   }
 
   void set_remote_transmitter(remote_base::RemoteTransmitterBase *transmitter) {
     this->remote_transmitter_ = transmitter;
   }
-  void set_prog_button(button::Button *button) { this->prog_button_ = button; }
   void set_remote_address(uint32_t remote_address) { this->remote_address_ = remote_address; }
-  void set_blind_number(int blind_number) { this->blind_number_ = blind_number; }
-  void set_multicast(bool multicast) { this->multicast_ = multicast; }
   void set_storage_namespace(const char *storage_namespace) { this->storage_namespace_ = storage_namespace; }
   void set_storage_key(const char *storage_key) { this->storage_key_ = storage_key; }
   void set_repeat(int repeat) { this->repeat_ = repeat; }
 
-  void open() { this->send_command(EnjoyCommand::Up); }
-  void close() { this->send_command(EnjoyCommand::Down); }
-  void stop() { this->send_command(EnjoyCommand::Stop); }
-  void program() { this->send_command(EnjoyCommand::Prog); }
+  void send_command(EnjoyCommand command, int blind_number, bool multicast) {
+    this->send_command(command, blind_number, multicast, this->repeat_);
+  }
 
-  void send_command(EnjoyCommand command) { this->send_command(command, this->repeat_); }
-
-  void send_command(EnjoyCommand command, int repeat) {
+  void send_command(EnjoyCommand command, int blind_number, bool multicast, int repeat) {
     if (this->remote_transmitter_ == nullptr) {
       ESP_LOGE(TAG, "No remote_transmitter configured");
+      return;
+    }
+    if (blind_number < 0 || blind_number > 3) {
+      ESP_LOGE(TAG, "Blind number %d is outside the supported range 0-3", blind_number);
       return;
     }
     if (repeat < 1 || repeat > 16) {
@@ -77,7 +65,7 @@ class EnjoyRemote : public Component {
     }
 
     std::array<uint8_t, 8> frame{};
-    this->build_frame_(frame, command, rolling_code);
+    this->build_frame_(frame, command, rolling_code, blind_number, multicast);
 
     std::vector<int32_t> timings;
     timings.reserve(280 * (repeat + 1));
@@ -89,7 +77,7 @@ class EnjoyRemote : public Component {
 
     ESP_LOGI(TAG,
              "Sending command %01x to blind %d. Counter: %u. Multicast: %d. Repeat: %d",
-             static_cast<uint8_t>(command), this->blind_number_, rolling_code, this->multicast_, repeat);
+             static_cast<uint8_t>(command), blind_number, rolling_code, multicast, repeat);
     auto call = this->remote_transmitter_->transmit();
     call.get_data()->set_data(timings);
     call.perform();
@@ -97,15 +85,17 @@ class EnjoyRemote : public Component {
 
  protected:
   remote_base::RemoteTransmitterBase *remote_transmitter_{nullptr};
-  button::Button *prog_button_{nullptr};
   const char *storage_namespace_{"EnjoyCodes"};
-  const char *storage_key_{"mandoEnjoy"};
+  const char *storage_key_{nullptr};
   uint32_t remote_address_{0};
-  int blind_number_{0};
-  bool multicast_{false};
   int repeat_{1};
 
   bool next_rolling_code_(uint8_t *code) {
+    if (this->storage_key_ == nullptr || this->storage_key_[0] == '\0') {
+      ESP_LOGE(TAG, "No storage_key configured");
+      return false;
+    }
+
     Preferences preferences;
     if (!preferences.begin(this->storage_namespace_, false)) {
       ESP_LOGE(TAG, "Failed to open preferences namespace '%s'", this->storage_namespace_);
@@ -122,12 +112,13 @@ class EnjoyRemote : public Component {
     return true;
   }
 
-  void build_frame_(std::array<uint8_t, 8> &frame, EnjoyCommand command, uint8_t code) {
+  void build_frame_(std::array<uint8_t, 8> &frame, EnjoyCommand command, uint8_t code, int blind_number,
+                    bool multicast) {
     const uint8_t button = static_cast<uint8_t>(command);
-    frame[1] = this->multicast_ ? 0x0F : static_cast<uint8_t>(1U << this->blind_number_);
+    frame[1] = multicast ? 0x0F : static_cast<uint8_t>(1U << blind_number);
     frame[2] = static_cast<uint8_t>((button << 4) | ((this->remote_address_ & 0xF00) >> 8));
     frame[3] = static_cast<uint8_t>(this->remote_address_ & 0xFF);
-    frame[5] = static_cast<uint8_t>(this->blind_number_);
+    frame[5] = static_cast<uint8_t>(blind_number);
     frame[6] = static_cast<uint8_t>(((frame[2] & 0xF0) | (frame[5] ^ 0x01)) ^ code);
 
     uint8_t remainder = 0;
@@ -178,18 +169,23 @@ template<typename... Ts> class SendAction : public Action<Ts...> {
   explicit SendAction(EnjoyRemote *parent) : parent_(parent) {}
 
   void set_command(EnjoyCommand command) { this->command_ = command; }
+  void set_blind_number(int blind_number) { this->blind_number_ = blind_number; }
+  void set_multicast(bool multicast) { this->multicast_ = multicast; }
   TEMPLATABLE_VALUE(int, repeat_count)
 
   void play(const Ts &...x) override {
     if (this->repeat_count_.has_value()) {
-      this->parent_->send_command(this->command_, this->repeat_count_.value(x...));
+      this->parent_->send_command(this->command_, this->blind_number_, this->multicast_,
+                                  this->repeat_count_.value(x...));
     } else {
-      this->parent_->send_command(this->command_);
+      this->parent_->send_command(this->command_, this->blind_number_, this->multicast_);
     }
   }
 
  protected:
   EnjoyRemote *parent_;
+  int blind_number_{0};
+  bool multicast_{false};
   EnjoyCommand command_{EnjoyCommand::Stop};
 };
 
